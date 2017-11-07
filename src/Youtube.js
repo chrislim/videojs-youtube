@@ -19,29 +19,12 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
-/*global define, YT*/
-(function (root, factory) {
-  if(root.videojs) {
-    root.Youtube = factory(root.videojs);
-  } else if(typeof exports==='object' && typeof module!=='undefined') {
-    var videojs = require('video.js');
-    if (videojs.default) { // webpack compat
-      videojs = videojs.default;
-    }
-    module.exports = factory(videojs);
-  } else if(typeof define === 'function' && define.amd) {
-    define(['videojs'], function(videojs){
-      return (root.Youtube = factory(videojs));
-    });
-  }
-}(this, function(videojs) {
-  'use strict';
 
+export default function videojsYoutube(videojs) {
   var _isOnMobile = videojs.browser.IS_IOS || videojs.browser.IS_ANDROID;
   var Tech = videojs.getTech('Tech');
 
   var Youtube = videojs.extend(Tech, {
-
     constructor: function(options, ready) {
       Tech.call(this, options, ready);
 
@@ -50,21 +33,23 @@ THE SOFTWARE. */
 
       // Set the vjs-youtube class to the player
       // Parent is not set yet so we have to wait a tick
-      this.setTimeout(function() {
-        if (this.el_) {
-          this.el_.parentNode.className += ' vjs-youtube';
+      this.setTimeout(
+        function() {
+          if (this.el_) {
+            this.el_.parentNode.className += ' vjs-youtube';
 
-          if (_isOnMobile) {
-            this.el_.parentNode.className += ' vjs-youtube-mobile';
-          }
+            if (_isOnMobile) {
+              this.el_.parentNode.className += ' vjs-youtube-mobile';
+            }
 
-          if (Youtube.isApiReady) {
-            this.initYTPlayer();
-          } else {
-            Youtube.apiReadyQueue.push(this);
+            if (Youtube.isApiReady) {
+              this.initYTPlayer();
+            } else {
+              Youtube.apiReadyQueue.push(this);
+            }
           }
-        }
-      }.bind(this));
+        }.bind(this)
+      );
     },
 
     dispose: function() {
@@ -97,7 +82,10 @@ THE SOFTWARE. */
     createEl: function() {
       var div = document.createElement('div');
       div.setAttribute('id', this.options_.techId);
-      div.setAttribute('style', 'width:100%;height:100%;top:0;left:0;position:absolute');
+      div.setAttribute(
+        'style',
+        'width:100%;height:100%;top:0;left:0;position:absolute'
+      );
       div.setAttribute('class', 'vjs-tech');
 
       var divWrapper = document.createElement('div');
@@ -106,7 +94,10 @@ THE SOFTWARE. */
       if (!_isOnMobile && !this.options_.ytControls) {
         var divBlocker = document.createElement('div');
         divBlocker.setAttribute('class', 'vjs-iframe-blocker');
-        divBlocker.setAttribute('style', 'position:absolute;top:0;left:0;width:100%;height:100%');
+        divBlocker.setAttribute(
+          'style',
+          'position:absolute;top:0;left:0;width:100%;height:100%'
+        );
 
         // In case the blocker is still there and we want to pause
         divBlocker.onclick = function() {
@@ -233,7 +224,9 @@ THE SOFTWARE. */
         playerVars: playerVars,
         events: {
           onReady: this.onPlayerReady.bind(this),
-          onPlaybackQualityChange: this.onPlayerPlaybackQualityChange.bind(this),
+          onPlaybackQualityChange: this.onPlayerPlaybackQualityChange.bind(
+            this
+          ),
           onPlaybackRateChange: this.onPlayerPlaybackRateChange.bind(this),
           onStateChange: this.onPlayerStateChange.bind(this),
           onVolumeChange: this.onPlayerVolumeChange.bind(this),
@@ -263,9 +256,7 @@ THE SOFTWARE. */
       }
     },
 
-    onPlayerPlaybackQualityChange: function() {
-
-    },
+    onPlayerPlaybackQualityChange: function() {},
 
     onPlayerPlaybackRateChange: function() {
       this.trigger('ratechange');
@@ -333,7 +324,10 @@ THE SOFTWARE. */
       var code = 1000 + this.errorNumber; // as smaller codes are reserved
       switch (this.errorNumber) {
         case 5:
-          return { code: code, message: 'Error while trying to play the video' };
+          return {
+            code: code,
+            message: 'Error while trying to play the video'
+          };
 
         case 2:
         case 100:
@@ -343,11 +337,15 @@ THE SOFTWARE. */
         case 150:
           return {
             code: code,
-            message: 'Playback on other Websites has been disabled by the video owner.'
+            message:
+              'Playback on other Websites has been disabled by the video owner.'
           };
       }
 
-      return { code: code, message: 'YouTube unknown error (' + this.errorNumber + ')' };
+      return {
+        code: code,
+        message: 'YouTube unknown error (' + this.errorNumber + ')'
+      };
     },
 
     loadVideoById_: function(id) {
@@ -410,7 +408,8 @@ THE SOFTWARE. */
       if (!this.options_.poster) {
         if (this.url.videoId) {
           // Set the low resolution first
-          this.poster_ = 'https://img.youtube.com/vi/' + this.url.videoId + '/0.jpg';
+          this.poster_ =
+            'https://img.youtube.com/vi/' + this.url.videoId + '/0.jpg';
           this.trigger('posterchange');
 
           // Check if their is a high res
@@ -486,8 +485,8 @@ THE SOFTWARE. */
     },
 
     paused: function() {
-      return (this.ytPlayer) ?
-        (this.lastState !== YT.PlayerState.PLAYING && this.lastState !== YT.PlayerState.BUFFERING)
+      return this.ytPlayer ? this.lastState !== YT.PlayerState.PLAYING &&
+            this.lastState !== YT.PlayerState.BUFFERING
         : true;
     },
 
@@ -511,27 +510,33 @@ THE SOFTWARE. */
 
       // A seek event during pause does not return an event to trigger a seeked event,
       // so run an interval timer to look for the currentTime to change
-      if (this.lastState === YT.PlayerState.PAUSED && this.timeBeforeSeek !== seconds) {
+      if (
+        this.lastState === YT.PlayerState.PAUSED &&
+        this.timeBeforeSeek !== seconds
+      ) {
         clearInterval(this.checkSeekedInPauseInterval);
-        this.checkSeekedInPauseInterval = setInterval(function() {
-          if (this.lastState !== YT.PlayerState.PAUSED || !this.isSeeking) {
-            // If something changed while we were waiting for the currentTime to change,
-            //  clear the interval timer
-            clearInterval(this.checkSeekedInPauseInterval);
-          } else if (this.currentTime() !== this.timeBeforeSeek) {
-            this.trigger('timeupdate');
-            this.onSeeked();
-          }
-        }.bind(this), 250);
+        this.checkSeekedInPauseInterval = setInterval(
+          function() {
+            if (this.lastState !== YT.PlayerState.PAUSED || !this.isSeeking) {
+              // If something changed while we were waiting for the currentTime to change,
+              //  clear the interval timer
+              clearInterval(this.checkSeekedInPauseInterval);
+            } else if (this.currentTime() !== this.timeBeforeSeek) {
+              this.trigger('timeupdate');
+              this.onSeeked();
+            }
+          }.bind(this),
+          250
+        );
       }
     },
 
-    seeking: function () {
+    seeking: function() {
       return this.isSeeking;
     },
 
-    seekable: function () {
-      if(!this.ytPlayer) {
+    seekable: function() {
+      if (!this.ytPlayer) {
         return videojs.createTimeRange();
       }
 
@@ -570,7 +575,7 @@ THE SOFTWARE. */
     },
 
     ended: function() {
-      return this.ytPlayer ? (this.lastState === YT.PlayerState.ENDED) : false;
+      return this.ytPlayer ? this.lastState === YT.PlayerState.ENDED : false;
     },
 
     volume: function() {
@@ -592,8 +597,7 @@ THE SOFTWARE. */
     setMuted: function(mute) {
       if (!this.ytPlayer) {
         return;
-      }
-      else{
+      } else {
         this.muted(true);
       }
 
@@ -602,17 +606,18 @@ THE SOFTWARE. */
       } else {
         this.ytPlayer.unMute();
       }
-      this.setTimeout( function(){
+      this.setTimeout(function() {
         this.trigger('volumechange');
       }, 50);
     },
 
     buffered: function() {
-      if(!this.ytPlayer || !this.ytPlayer.getVideoLoadedFraction) {
+      if (!this.ytPlayer || !this.ytPlayer.getVideoLoadedFraction) {
         return videojs.createTimeRange();
       }
 
-      var bufferedEnd = this.ytPlayer.getVideoLoadedFraction() * this.ytPlayer.getDuration();
+      var bufferedEnd =
+        this.ytPlayer.getVideoLoadedFraction() * this.ytPlayer.getDuration();
 
       return videojs.createTimeRange(0, bufferedEnd);
     },
@@ -627,28 +632,28 @@ THE SOFTWARE. */
     },
 
     // Tries to get the highest resolution thumbnail available for the video
-    checkHighResPoster: function(){
-      var uri = 'https://img.youtube.com/vi/' + this.url.videoId + '/maxresdefault.jpg';
+    checkHighResPoster: function() {
+      var uri =
+        'https://img.youtube.com/vi/' + this.url.videoId + '/maxresdefault.jpg';
 
       try {
         var image = new Image();
-        image.onload = function(){
+        image.onload = function() {
           // Onload may still be called if YouTube returns the 120x90 error thumbnail
-          if('naturalHeight' in image){
+          if ('naturalHeight' in image) {
             if (image.naturalHeight <= 90 || image.naturalWidth <= 120) {
               return;
             }
-          } else if(image.height <= 90 || image.width <= 120) {
+          } else if (image.height <= 90 || image.width <= 120) {
             return;
           }
 
           this.poster_ = uri;
           this.trigger('posterchange');
         }.bind(this);
-        image.onerror = function(){};
+        image.onerror = function() {};
         image.src = uri;
-      }
-      catch(e){}
+      } catch (e) {}
     }
   });
 
@@ -661,7 +666,7 @@ THE SOFTWARE. */
   };
 
   Youtube.canPlayType = function(e) {
-    return (e === 'video/youtube');
+    return e === 'video/youtube';
   };
 
   Youtube.parseUrl = function(url) {
@@ -679,7 +684,7 @@ THE SOFTWARE. */
     var regPlaylist = /[?&]list=([^#\&\?]+)/;
     match = url.match(regPlaylist);
 
-    if(match && match[1]) {
+    if (match && match[1]) {
       result.listId = match[1];
     }
 
@@ -701,14 +706,17 @@ THE SOFTWARE. */
     var tag = document.createElement('script');
     var firstScriptTag = document.getElementsByTagName('script')[0];
     firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-    tag.onload = function () {
+    tag.onload = function() {
       if (!loaded) {
         loaded = true;
         callback();
       }
     };
-    tag.onreadystatechange = function () {
-      if (!loaded && (this.readyState === 'complete' || this.readyState === 'loaded')) {
+    tag.onreadystatechange = function() {
+      if (
+        !loaded &&
+        (this.readyState === 'complete' || this.readyState === 'loaded')
+      ) {
         loaded = true;
         callback();
       }
@@ -718,17 +726,17 @@ THE SOFTWARE. */
 
   function injectCss() {
     var css = // iframe blocker to catch mouse events
-              '.vjs-youtube .vjs-iframe-blocker { display: none; }' +
-              '.vjs-youtube.vjs-user-inactive .vjs-iframe-blocker { display: block; }' +
-              '.vjs-youtube .vjs-poster { background-size: cover; }' +
-              '.vjs-youtube-mobile .vjs-big-play-button { display: none; }';
+      '.vjs-youtube .vjs-iframe-blocker { display: none; }' +
+      '.vjs-youtube.vjs-user-inactive .vjs-iframe-blocker { display: block; }' +
+      '.vjs-youtube .vjs-poster { background-size: cover; }' +
+      '.vjs-youtube-mobile .vjs-big-play-button { display: none; }';
 
     var head = document.head || document.getElementsByTagName('head')[0];
 
     var style = document.createElement('style');
     style.type = 'text/css';
 
-    if (style.styleSheet){
+    if (style.styleSheet) {
       style.styleSheet.cssText = css;
     } else {
       style.appendChild(document.createTextNode(css));
@@ -739,7 +747,7 @@ THE SOFTWARE. */
 
   Youtube.apiReadyQueue = [];
 
-  if (typeof document !== 'undefined'){
+  if (typeof document !== 'undefined') {
     loadScript('https://www.youtube.com/iframe_api', apiLoaded);
     injectCss();
   }
@@ -750,4 +758,5 @@ THE SOFTWARE. */
   } else {
     videojs.registerComponent('Youtube', Youtube);
   }
-}));
+}
+
