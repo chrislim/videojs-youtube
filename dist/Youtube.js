@@ -24,7 +24,11 @@ THE SOFTWARE. */
   if(root.videojs) {
     root.Youtube = factory(root.videojs);
   } else if(typeof exports==='object' && typeof module!=='undefined') {
-    module.exports = factory(require('video.js'));
+    var videojs = require('video.js');
+    if (videojs.default) { // webpack compat
+      videojs = videojs.default;
+    }
+    module.exports = factory(videojs);
   } else if(typeof define === 'function' && define.amd) {
     define(['videojs'], function(videojs){
       return (root.Youtube = factory(videojs));
