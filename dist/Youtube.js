@@ -21,14 +21,14 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE. */
 /*global define, YT*/
 (function (root, factory) {
-  if(typeof exports==='object' && typeof module!=='undefined') {
+  if(root.videojs) {
+    root.Youtube = factory(root.videojs);
+  } else if(typeof exports==='object' && typeof module!=='undefined') {
     module.exports = factory(require('video.js'));
   } else if(typeof define === 'function' && define.amd) {
     define(['videojs'], function(videojs){
       return (root.Youtube = factory(videojs));
     });
-  } else {
-    root.Youtube = factory(root.videojs);
   }
 }(this, function(videojs) {
   'use strict';
